@@ -1,10 +1,8 @@
 ## FiveM-Admin-Mode
-*Admin Mode in Grand Style*
+*Admin Mode in Grand RP Style*
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.1-green.svg)
-
-Suggested GitHub Topics: `fivem` `lua` `admin` `esx` `qbcore`
 
 A lightweight admin mode script for ESX or QBCore (FiveM) featuring:
 
@@ -179,3 +177,4 @@ exports['FiveM-Admin-Mode']:LogAction(src, 'revive_player', ('Revive durchgefüh
 
 
 Good luck & have fun!
+
