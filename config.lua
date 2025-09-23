@@ -10,6 +10,8 @@ Config.Version = '1.0.0'
 -- Language / Locale (set after loading locale.lua)
 -- Examples: 'de', 'en'
 Config.Locale = 'en'
+-- Ordered fallback chain. First element (Locale) is primary; if a key is missing it searches each here in order.
+Config.LocaleFallback = { 'en' } -- you can set e.g. { 'de','en' } or { 'fr','en' }
 
 -- Framework selection: 'esx' or 'qb'
 -- AutoDetect = true tries preferred first, then the other. If both exist it keeps Preferred.
@@ -30,7 +32,9 @@ Config.AdminMode = {
     Command = 'admin',
     TransparentAlpha = 100,
     NormalAlpha = 255,
-    EnableGodMode = true
+    EnableGodMode = true,
+    SelfOpaque = false,          -- if true: admin sees themselves normal while others see transparency
+    AllowedGroups = { 'admin', 'superadmin' } -- empty = everyone can toggle
 }
 
 Config.Admin3DText = {
@@ -45,6 +49,14 @@ Config.Admin3DText = {
 Config.Scan = {
     IntervalMs = 1000,
     Radius = 100.0
+}
+
+-- Performance / detection strategy
+-- UseScopeEvents (OneSync): use playerEnteredScope / playerLeftScope events instead of legacy radius scan.
+-- LegacyScanFallback: if scope events not firing (older build), fall back to old scan loop.
+Config.Performance = {
+    UseScopeEvents = true,
+    LegacyScanFallback = true
 }
 
 Config.Teleport = {

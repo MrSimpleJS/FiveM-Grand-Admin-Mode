@@ -186,6 +186,18 @@ end)
 -- Admin toggle command
 RegisterCommand(cfg.AdminMode.Command, function(source)
     local src = source
+    -- Optional permission check: only allow listed groups if provided in config
+    if cfg.AdminMode.AllowedGroups and #cfg.AdminMode.AllowedGroups > 0 then
+        local group = GetPlayerGroup(src)
+        local ok = false
+        for _, g in ipairs(cfg.AdminMode.AllowedGroups) do if g == group then ok = true break end end
+        if not ok then
+            if cfg.Notification.Enabled then
+                TriggerClientEvent(cfg.Notification.Event, src, 3, 'AdminMode', 'No permission for /'..cfg.AdminMode.Command)
+            end
+            return
+        end
+    end
     if transparentPlayers[src] then
         transparentPlayers[src] = nil
         TriggerClientEvent(cfg.Events.SetTransparency, -1, src, cfg.AdminMode.NormalAlpha)
@@ -194,12 +206,22 @@ RegisterCommand(cfg.AdminMode.Command, function(source)
         if cfg.LogFlags.AdminToggle then LogAction(src, 'admin_off', L('admin_disabled')) end
     else
         transparentPlayers[src] = true
+        -- Broadcast to everyone else including the admin (if you want admin to see self normal, change target list logic)
         TriggerClientEvent(cfg.Events.SetTransparency, -1, src, cfg.AdminMode.TransparentAlpha)
         TriggerClientEvent(cfg.Events.SetGodMode, src, true)
         if cfg.Debug.PrintAdminToggle then print(('[AdminMode] %s'):format(L('admin_enabled'))) end
         if cfg.LogFlags.AdminToggle then LogAction(src, 'admin_on', L('admin_enabled')) end
     end
 end, true)
+
+-- New: allow late joiners to request current transparency states
+RegisterNetEvent('adminmode:requestSync')
+AddEventHandler('adminmode:requestSync', function()
+    local src = source
+    for playerId, _ in pairs(transparentPlayers) do
+        TriggerClientEvent(cfg.Events.SetTransparency, src, playerId, cfg.AdminMode.TransparentAlpha)
+    end
+end)
 
 RegisterNetEvent(cfg.Events.CheckTransparency)
 AddEventHandler(cfg.Events.CheckTransparency, function(playerId)
@@ -315,12 +337,9 @@ AddEventHandler('playerConnecting', function(name, setKick, def)
     end
 end)
 
+-- Consolidated playerDropped handler (above already clears transparency) + logging
 AddEventHandler('playerDropped', function(reason)
     local src = source
-    if transparentPlayers[src] then
-        transparentPlayers[src] = nil
-        TriggerClientEvent(cfg.Events.SetTransparency, -1, src, cfg.AdminMode.NormalAlpha)
-    end
     if cfg.LogFlags.PlayerLeave then
         LogAction(src, 'player_leave', reason or 'disconnect')
     end

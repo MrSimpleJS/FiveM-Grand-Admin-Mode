@@ -2,17 +2,25 @@
 *Admin Mode in Grand RP Style*
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.1-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-green.svg)
 
 A lightweight admin mode script for ESX or QBCore (FiveM) featuring:
 
+Core Features:
 - Toggleable admin mode (transparency + optional godmode)
-- Visible 3D text above active admins (configurable / disableable)
-- Automatic nearby player scan (transparency sync)
-- Static ID display (if `staticApi` resource is present)
-- Simple coordinate teleport command
-- Dimension (routing bucket) management command
-- Fully configurable through `config.lua`
+- New: Admin sees self opaque while others see transparency (`SelfOpaque`)
+- 3D text above active admins (locale-based, multi-language auto-loading)
+- Efficient sync: scope-based (playerEnteredScope) transparency updates (fallback radius scan)
+- Static ID display (optional external resource) or server id fallback
+- Teleport & Dimension (routing bucket) management commands
+- Permission group restrictions for admin, teleport & dimension commands
+- Logging: DB (optional), Discord webhook, granular LogFlags
+- Locale fallback chain: `Config.LocaleFallback = { 'de', 'en' }`
+- New sync event for late joiners (`adminmode:requestSync`)
+
+Performance Enhancements (1.1.0):
+- Optional OneSync scope event usage instead of continuous distance loop
+- Reduced redundant alpha updates & improved cleanup on disconnect
 
 ### Installation
 1. Place the folder into your `resources` directory (e.g. `FiveM-Admin-Mode`).
@@ -64,51 +72,53 @@ All settings live in `config.lua`.
 | `Database` | Optional MySQL logging |
 
 ### Locale / i18n
-The script uses a simple locale system.
+The locale system now auto-loads every `locales/<code>.lua` file it finds (common codes). You just drop a new file (e.g. `fr.lua`) – no fxmanifest edit required.
 
-Files:
-- `locale.lua` (loader & function `L(key, ...)`)
-- `locales/en.lua`, `locales/de.lua`
+Basics:
+- Loader: `locale.lua` provides global `L(key, ...)`.
+- Files: `locales/en.lua`, `locales/de.lua`, plus any you add.
+- Primary language: `Config.Locale = 'en'`.
+- Fallback chain: `Config.LocaleFallback = { 'de', 'en' }` tries in order.
+- Missing key → tries chain → falls back to key string.
+- Keys with accidental double underscores (`admin3d__line1`) are normalized.
 
-Set the active language in `config.lua`:
-```
-Config.Locale = 'en' -- or 'de'
-```
-
-Example locale entry (`locales/en.lua`):
-```
-teleport_no_permission = 'You do not have permission to use this command.'
-```
-Usage in code:
-```
-L('teleport_no_permission')
-```
-
-Placeholders use `string.format`:
+Example entry (`locales/en.lua`):
 ```
 teleport_success = 'Teleported to: X: %s Y: %s Z: %s'
--- Call: L('teleport_success', x, y, z)
+```
+Usage:
+```
+L('teleport_success', x, y, z)
 ```
 
-Fallback: If the key is missing in the selected locale, it falls back to English (`en`). If still missing, the key name itself is returned.
+Adding a new language:
+1. Create `locales/fr.lua`:
+    ```lua
+    return {
+       admin3d_line1 = 'Administrateur',
+       admin3d_line2 = 'ID: %s'
+    }
+    ```
+2. Set `Config.Locale = 'fr'` (and optionally a fallback list).
+3. Restart resource.
 
-Add a new language:
-1. Create `locales/fr.lua` returning a table: `return { key = 'Text', ... }`.
-2. Add it to `fxmanifest.lua` under `shared_scripts`.
-3. Set `Config.Locale = 'fr'`.
-
-3D text uses keys from `Config.Admin3DText.Lines` (e.g. `admin3d_line1`, `admin3d_line2`). The second line receives `%s` for the ID.
+3D Text: Controlled via `Config.Admin3DText.Lines` (default: `admin3d_line1`, `admin3d_line2`). Second line formats the ID with `%s`.
 
 
 ### Default Commands
 | Command | Description |
 |---------|-------------|
-| `/admin` | Toggle admin mode |
+| `/admin` | Toggle admin mode (transparent + godmode optional) |
 | `/tpto x y z` | Teleport to coordinates |
 | `/setdim id bucket` | Set player routing bucket |
+| (internal) `adminmode:requestSync` | Client → server, resyncs current transparent admins (auto called) |
 
 ### Notes
-Set `Config.StaticId.Enabled = false` if you do not have the static ID resource installed.
+- Set `Config.StaticId.Enabled = false` if you do not have the static ID resource installed.
+- To keep admin fully visible to self: keep `SelfOpaque = true`.
+- To let admin also see own transparency: set `SelfOpaque = false`.
+- Restrict who can toggle admin: adjust `Config.AdminMode.AllowedGroups`.
+-- Performance: If OneSync scope events misbehave, set `Config.Performance.UseScopeEvents = false` to revert to radius scan.
 
 ### Database Logging (optional)
 Enable log entries (admin on/off, dimension changes, teleport, etc.) in MySQL.
@@ -175,6 +185,16 @@ Example:
 exports['FiveM-Admin-Mode']:LogAction(src, 'revive_player', ('Revive durchgeführt für %s'):format(targetId))
 ```
 
+
+### Upgrading 1.0.x → 1.1.0
+Minimal changes required. New optional config entries (add if missing):
+```
+Config.AdminMode.SelfOpaque = true
+Config.AdminMode.AllowedGroups = { 'admin', 'superadmin' }
+Config.Performance = { UseScopeEvents = true, LegacyScanFallback = true }
+Config.LocaleFallback = { 'en' }
+```
+`locale.lua` auto-load now; you can remove explicit locale file lines from `fxmanifest.lua` if desired (kept for backward compatibility).
 
 Good luck & have fun!
 

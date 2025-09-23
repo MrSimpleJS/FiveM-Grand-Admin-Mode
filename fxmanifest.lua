@@ -4,7 +4,7 @@ game 'gta5'
 
 author 'Simple'
 description 'Admin mode with external configuration'
-version '1.0.1'
+version '1.1.0'
 
 shared_scripts {
     'config.lua',

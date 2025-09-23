@@ -105,40 +105,79 @@ end
 local adminPlayers = {}
 local staticIds = {}
 local checkedPlayers = {}
+local pendingPlayers = {} -- stores server ids that entered scope and are awaiting initial transparency fetch
 
-Citizen.CreateThread(function()
-    while true do
-    Citizen.Wait(cfg.Scan.IntervalMs)
-
-        local playerPed = PlayerPedId()
-        local playerPos = GetEntityCoords(playerPed)
-
-        for _, playerId in ipairs(GetActivePlayers()) do
-            local otherPed = GetPlayerPed(playerId)
-            local otherPos = GetEntityCoords(otherPed)
-
-            if #(playerPos - otherPos) <= cfg.Scan.Radius then
-                if not checkedPlayers[playerId] then
-                    TriggerServerEvent(cfg.Events.CheckTransparency, GetPlayerServerId(playerId))
-                    if cfg.StaticId.Enabled then
-                        TriggerServerEvent(cfg.Events.GetStaticId, GetPlayerServerId(playerId))
-                    end
-                    checkedPlayers[playerId] = true
-                end
-            else
-                checkedPlayers[playerId] = nil
-                adminPlayers[playerId] = nil
-                staticIds[playerId] = nil
-            end
-        end
+-- Request current admin transparency states after player fully loads
+AddEventHandler('onClientResourceStart', function(res)
+    if res == GetCurrentResourceName() then
+        -- small delay to ensure network ids exist
+        CreateThread(function()
+            Wait(2000)
+            TriggerServerEvent('adminmode:requestSync')
+        end)
     end
 end)
 
+-- Scope-based detection (OneSync Infinity/legacy) reduces constant distance scanning
+if cfg.Performance and cfg.Performance.UseScopeEvents then
+    AddEventHandler('playerEnteredScope', function(data)
+        local serverId = data and data.player or data -- depending on build
+        if type(serverId) ~= 'number' then return end
+        pendingPlayers[serverId] = true
+        TriggerServerEvent(cfg.Events.CheckTransparency, serverId)
+        if cfg.StaticId.Enabled then
+            TriggerServerEvent(cfg.Events.GetStaticId, serverId)
+        end
+    end)
+
+    AddEventHandler('playerLeftScope', function(data)
+        local serverId = data and data.player or data
+        if type(serverId) ~= 'number' then return end
+        pendingPlayers[serverId] = nil
+        checkedPlayers[serverId] = nil
+        adminPlayers[serverId] = nil
+        staticIds[serverId] = nil
+    end)
+else
+    -- Fallback to legacy radius scan loop if scope events disabled
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(cfg.Scan.IntervalMs)
+            local playerPed = PlayerPedId()
+            local playerPos = GetEntityCoords(playerPed)
+            for _, playerId in ipairs(GetActivePlayers()) do
+                local otherPed = GetPlayerPed(playerId)
+                local otherPos = GetEntityCoords(otherPed)
+                if #(playerPos - otherPos) <= cfg.Scan.Radius then
+                    if not checkedPlayers[playerId] then
+                        TriggerServerEvent(cfg.Events.CheckTransparency, GetPlayerServerId(playerId))
+                        if cfg.StaticId.Enabled then
+                            TriggerServerEvent(cfg.Events.GetStaticId, GetPlayerServerId(playerId))
+                        end
+                        checkedPlayers[playerId] = true
+                    end
+                else
+                    checkedPlayers[playerId] = nil
+                    adminPlayers[playerId] = nil
+                    staticIds[playerId] = nil
+                end
+            end
+        end
+    end)
+end
+
 RegisterNetEvent(cfg.Events.SetTransparency)
 AddEventHandler(cfg.Events.SetTransparency, function(playerId, alpha)
+    local localServerId = GetPlayerServerId(PlayerId())
     local ped = GetPlayerPed(GetPlayerFromServerId(playerId))
     if DoesEntityExist(ped) then
-        SetEntityAlpha(ped, alpha, false)
+        -- If you want the admin to see themselves fully opaque while others see them transparent,
+        -- add a config flag AdminMode.SelfOpaque and handle here
+        if cfg.AdminMode.SelfOpaque and playerId == localServerId and alpha < 255 then
+            SetEntityAlpha(ped, cfg.AdminMode.NormalAlpha, false)
+        else
+            SetEntityAlpha(ped, alpha, false)
+        end
         if alpha < 255 then
             adminPlayers[playerId] = ped
         else
