@@ -4,6 +4,8 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.1.0-green.svg)
 
+[Changelog](./CHANGELOG.md) · [License](./LICENSE)
+
 A lightweight admin mode script for ESX or QBCore (FiveM) featuring:
 
 Core Features:
@@ -197,4 +199,8 @@ Config.LocaleFallback = { 'en' }
 `locale.lua` auto-load now; you can remove explicit locale file lines from `fxmanifest.lua` if desired (kept for backward compatibility).
 
 Good luck & have fun!
+
+---
+
+For detailed version history see the [Changelog](./CHANGELOG.md).
 
