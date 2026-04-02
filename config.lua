@@ -5,7 +5,7 @@
 Config = {}
 
 Config.ResourceName = 'FiveM-Admin-Mode'
-Config.Version = '1.0.0'
+Config.Version = '1.1.1'
 
 -- Language / Locale (set after loading locale.lua)
 -- Examples: 'de', 'en'
@@ -68,7 +68,7 @@ Config.Teleport = {
 
 Config.Dimension = {
     Command = 'setdim',
-    AllowedGroups = { 'superadmin', 'admin', 'mod' }
+    AllowedGroups = { 'superadmin', 'admin', 'mod' },
     -- Locale keys used:
     -- dimension_no_permission, dimension_self_error, dimension_success_admin, dimension_success_target,
     -- dimension_usage, player_not_found, dimension_header

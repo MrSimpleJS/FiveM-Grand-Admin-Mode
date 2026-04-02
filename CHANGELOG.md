@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 The format loosely follows Keep a Changelog and Semantic Versioning.
 
+## [1.1.1] - 2026-04-03
+### Fixed
+- Removed the hard dependency on `@es_extended/imports.lua` so the resource can start in QBCore-only setups.
+- Corrected legacy scan state tracking to consistently use server IDs for cleanup and admin/static-id state management.
+- Wired `Config.Performance.LegacyScanFallback` into the client logic so the documented fallback path is actually used.
+- Replaced the `/tpto` permission error path to use the existing notify wrapper instead of relying on a global `ESX` object.
+- Cleaned up broken German text encoding in locale output and database status logging.
+
 ## [1.1.0] - 2025-09-23
 ### Added
 - Scope-based synchronization using `playerEnteredScope` / `playerLeftScope` events (performance improvement) with fallback radius scan.

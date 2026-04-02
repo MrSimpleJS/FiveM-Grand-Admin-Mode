@@ -177,7 +177,7 @@ CreateThread(function()
         if schema and DB.execute then
             local createSql = ('CREATE TABLE IF NOT EXISTS `%s` (%s)'):format(tableName, schema)
             DB.execute(createSql, {}, function()
-                print('[AdminMode] DB Tabelle geprüft: '..tableName)
+                print('[AdminMode] DB Tabelle geprueft: '..tableName)
             end)
         end
     end
@@ -353,23 +353,3 @@ end)
 exports('GetAdminState', function(playerId)
     return transparentPlayers[playerId] == true
 end)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
